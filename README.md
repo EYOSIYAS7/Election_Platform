@@ -78,5 +78,18 @@ npm install
 ```bash
 npm run start
 ```
-### 5. Smart contract 
+### 4. To run the server
+```bash
+cd server
+npm run start or npm run dev
+```
+### 6. Smart contract 
 We have already deployed the smart contract on sepolia test net, make sure you have installed **MetaMask** and connected to the **sepolia test** net and have some faucets to make transactions.
+
+### 7. Authentication
+The admin can connect with it's wallet address
+
+The users must authenticate themselves with thier FAN number and must connect with thier metamask account to make the voting transaction 
+
+The React app runs on http://localhost:3000 for the users and the admin endpoint is http://localhost:3000/admin
+The Server runs on http://localhost:5000
