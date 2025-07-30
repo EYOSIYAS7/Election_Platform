@@ -88,42 +88,6 @@ contract Voting {
         emit Voted(_electionId, _candidateId);
     }
 
-    // function getAllVotesOfCandidates() public view returns (Candidate[] memory){
-    //         return candidates;
-    //     }
-    // function getCandidate(uint _electionId) public payable returns   (Candidate[] memory) {
-    //     // Fetch the candidate from the election's mapping of candidates
-
-    //     delete candidates;
-    //       for (uint256 i = _electionId; i <= elections[_electionId].candidateCount; i++) {
-    //         Candidate memory candidate = elections[_electionId].candidates[i];
-    //         candidates.push(Candidate({
-    //             id:candidate.id,
-    //             name:candidate.name,
-    //             voteCount:candidate.voteCount
-    //         }));
-    //     }
-
-    //      return candidates;
-    // }
-    // function getCandidate(uint _electionId)
-    //     public
-    //     view
-    //     returns (Candidate[] memory)
-    // {
-    //     Election storage election = elections[_electionId];
-    //     uint totalCandidates = election.candidateCount;
-
-    //     // Create a memory array to hold the candidates
-    //     Candidate[] memory candidatesArray = new Candidate[](totalCandidates);
-
-    //     for (uint i = 1; i <= totalCandidates; i++) {
-    //         Candidate storage candidate = election.candidates[i];
-    //         candidatesArray[i - 1] = candidate;
-    //     }
-
-    //     return candidatesArray;
-    // }
     function getCandidate(
         uint _electionId
     )
