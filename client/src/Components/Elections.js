@@ -64,6 +64,18 @@ const VotingHome = (props) => {
               accessible.
             </p>
             <a
+              href="/callback"
+              className="connect-button"
+              style={{
+                display: "inline-flex",
+                alignItems: "center",
+                marginRight: "10px",
+              }}
+            >
+              <span>Login</span>
+              <FaAngleRight />
+            </a>
+            <a
               href={generateSignInUrl()}
               className="connect-button"
               style={{
