@@ -1,7 +1,6 @@
 import React, { useState, useEffect } from "react";
 
 import close from "../assets/close.svg";
-import houseImage from "../assets/houses.png";
 import { useParams } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 export default function Candidate(props) {
@@ -14,7 +13,6 @@ export default function Candidate(props) {
       try {
         let headersList = {
           Accept: "*/*",
-          // "User-Agent": "Thunder Client (https://www.thunderclient.com)"
         };
 
         let response = await fetch(

@@ -31,23 +31,14 @@ const VotingHome = (props) => {
     } else {
       console.log("Metamask is not detected in your browser");
     }
-    // props.getCandidates();
   }
-  // useEffect(() => {
-  //   const savedAccount = localStorage.getItem("userAccount");
-  //   if (savedAccount) {
-  //     props.setAccount(savedAccount);
-  //     props.setConnected(true);
-  //     props.setLogged(true);
-  //   }
-  // }, []);
 
   const handleLogout = () => {
     localStorage.removeItem("userAccount");
     props.setConnected(true);
     props.setLogged(true);
   };
- 
+
   return (
     <div>
       {props.logged ? (
@@ -60,8 +51,9 @@ const VotingHome = (props) => {
             <div className="hero-content">
               <h1>Secure Blockchain Voting Platform</h1>
               <p>
-                Experience the next generation of democratic participation with our
-                decentralized voting platform. Secure, transparent, and accessible.
+                Experience the next generation of democratic participation with
+                our decentralized voting platform. Secure, transparent, and
+                accessible.
               </p>
               <button className="connect-button" onClick={connectWithMetamask}>
                 <span>Connect Wallet</span>
@@ -80,7 +72,10 @@ const VotingHome = (props) => {
                     <FaUsers className="step-icon" />
                   </div>
                   <h3>Connect Wallet</h3>
-                  <p>Securely connect your MetaMask wallet to access the voting platform.</p>
+                  <p>
+                    Securely connect your MetaMask wallet to access the voting
+                    platform.
+                  </p>
                 </div>
 
                 <div className="step-card">
@@ -88,7 +83,10 @@ const VotingHome = (props) => {
                     <FaClipboardList className="step-icon" />
                   </div>
                   <h3>Select Election</h3>
-                  <p>Browse active elections and choose the one you want to participate in.</p>
+                  <p>
+                    Browse active elections and choose the one you want to
+                    participate in.
+                  </p>
                 </div>
 
                 <div className="step-card">
@@ -96,7 +94,9 @@ const VotingHome = (props) => {
                     <FaVoteYea className="step-icon" />
                   </div>
                   <h3>Cast Your Vote</h3>
-                  <p>Vote securely and transparently using blockchain technology.</p>
+                  <p>
+                    Vote securely and transparently using blockchain technology.
+                  </p>
                 </div>
               </div>
             </div>

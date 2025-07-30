@@ -130,21 +130,8 @@ const AdminDashboard = () => {
     const electionCountBN = await contractInstance.electionCount();
     const electionCount = electionCountBN.toNumber();
     console.log("Election count: ", electionCount);
-    const electionData = [];
     for (let index = 1; index <= electionCount; index++) {
       const currentElectionData = await contractInstance.getElection(index);
-      // console.log("election id:", currentElectionData[0].toNumber());
-      // console.log(" election Title:", currentElectionData[1]);
-      // console.log(
-      //   index,
-      //   "election candidates:",
-      //   currentElectionData[2].toNumber()
-      // );
-      // console.log(
-      //   index,
-      //   "election startTime:",
-      //   currentElectionData[3].toNumber()
-      // );
 
       const now = Math.floor(Date.now() / 1000); // Current timestamp in seconds
       const electionEndTime = currentElectionData[3].toNumber();
@@ -656,23 +643,6 @@ const AdminDashboard = () => {
                     id="electionEndTime"
                     onChange={(e) => setEndTime(e.target.value)}
                   />
-                  {/* <button 
-                    type="button"
-                    className="btn btn-success me-2"
-                    onClick={(e) => setElectionTime(document.getElementById('electionEndTime').value)}
-                  >
-                    Start
-                  </button> */}
-                  {/* <button
-                    type="button" 
-                    className="btn btn-danger"
-                    onClick={() => {
-                      document.getElementById('electionEndTime').value = '';
-                      stopElectionCountdown()
-                    }}
-                  >
-                    Stop
-                  </button> */}
                 </div>
               </div>
               <button
@@ -682,18 +652,6 @@ const AdminDashboard = () => {
               >
                 Create Election
               </button>
-              {/* <button
-                className=" ms-2 btn btn-outline-info"
-                onClick={getElectionData}
-              >
-                get a current election data
-              </button> */}
-              {/* <button
-                className=" ms-2 btn btn-outline-primary"
-                onClick={getAllElectionData}
-              >
-                get a All election data
-              </button> */}
             </form>
           )}
         </div>

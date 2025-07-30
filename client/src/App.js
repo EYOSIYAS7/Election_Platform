@@ -1,28 +1,38 @@
+import React from "react";
+import { BrowserRouter as Router, Route, Routes } from "react-router-dom";
 import { useState, useEffect } from "react";
 import { ethers } from "ethers";
 import { ContractAbi, ContractAddress } from "./Constant/constant";
-import Login from "./Components/Login";
+
 import AdminDashboard from "./Components/AdminDashboard";
 import UserDashboard from "./Components/userDashBoard";
 import AdminLogin from "./Components/AdminLogin";
-import VotingPage from "./Components/VotingPage";
-import Elections from "./Components/Elections";
-import "./App.css";
-import Candidate from "./Components/Candidate";
 
+import Elections from "./Components/Elections";
+import Candidate from "./Components/Candidate";
+import NotFound from "./Components/404page";
+import "./App.css";
+import VotingResult from "./Components/VotingResult";
+import FinishedElectionDetails from "./Components/FinshedResult";
 function App() {
   const [toggle, setToggle] = useState(false);
   const [provider, setProvider] = useState(null);
-  const [account, setAccount] = useState(null);
+  const [Account, setAccount] = useState(null);
   const [isConnected, setConnected] = useState(false);
+  const [loged, setLoged] = useState(false);
 
   const [Candidates, setCandidates] = useState([]);
   // const [number, setNumber] = useState(null);
-  const [voterStatus, setVoterStatus] = useState(false);
+
   const [CandidateIndex, setCandidateIndex] = useState(null);
 
   useEffect(() => {
     // getCurrentStatus();
+    const savedAccount = localStorage.getItem("userAccount");
+    if (savedAccount) {
+      setAccount(savedAccount);
+      setConnected(true);
+    }
     if (window.ethereum) {
       window.ethereum.on("accountsChanged", handleAccountsChanged);
     }
@@ -36,95 +46,139 @@ function App() {
       }
     };
   });
-
+  // first of all this account change logic will only be used for client side
   function handleAccountsChanged(accounts) {
-    if (accounts.length > 0 && account !== accounts[0]) {
+    if (accounts.length > 0 && Account !== accounts[0]) {
       setAccount(accounts[0]);
-      canVote();
-      getCandidates();
+      setConnected(true);
+      localStorage.setItem("userAccount", accounts[0]);
+      // canVote();
+      // here
+      // getCandidates();
     } else {
       setConnected(false);
       setAccount(null);
+      setConnected(false);
+      setAccount(null);
+
+      // Clear account from localStorage
+      localStorage.removeItem("userAccount");
+      // and here needs election id
+      // getCandidates();
     }
   }
 
-  async function getCandidates() {
+  async function getCandidates(id) {
+    setCandidates([]);
     const Provider = new ethers.providers.Web3Provider(window.ethereum);
-    // await Provider.send("eth_requestAccounts", []);
-    // const signer = Provider.getSigner();
-    const contractInstance = new ethers.Contract(
-      ContractAddress,
-      ContractAbi,
-      Provider
-    );
-    const candidates = await contractInstance.getAllVotesOfCandidates();
-
-    const formattedCandidates = candidates.map((candidates, index) => {
-      return {
-        index: index,
-        name: candidates.name,
-        voteCount: candidates.voteCount.toNumber(),
-      };
-    });
-    console.log(formattedCandidates);
-    setCandidates(formattedCandidates);
-  }
-
-  async function canVote() {
-    const Provider = new ethers.providers.Web3Provider(window.ethereum);
-    setProvider(Provider);
     await Provider.send("eth_requestAccounts", []);
     const signer = Provider.getSigner();
-
     const contractInstance = new ethers.Contract(
       ContractAddress,
       ContractAbi,
       Provider
     );
-    // get the eligibility status and set it to VoterStatus
-    // this kind of functions just read data from the blockchain
-    const voteStatus = await contractInstance.voters(await signer.getAddress());
-    console.log("Voter status from the contract", voteStatus);
-    console.log(
-      "the voter status before setting it to voterStatus",
-      voterStatus
-    );
-    setVoterStatus(voteStatus);
+    console.log(id);
+
+    const [ids, names, voteCounts] = await contractInstance
+      .connect(signer)
+      .getCandidate(id);
+
+    // Combine the arrays into an array of candidate objects
+    const candidates = ids.map((id, index) => ({
+      id: id.toNumber(), // Convert BigNumber to number
+      name: names[index],
+      voteCount: voteCounts[index].toNumber(),
+    }));
+
+    console.log("Candidates:", candidates);
+    setCandidates(candidates);
+    // const receipt = await candidates.wait();
+    // const iface = new ethers.utils.Interface(ContractAbi);
+    // const decodedData = iface.parseTransaction({ data: candidates.data });
+    // console.log(decodedData.functionFragment.outputs[0]);
+
+    // console.log(receipt);
+    // const formattedCandidates = candidates.map((candidates, index) => {
+    //   return {
+    //     index: index,
+    //     name: candidates.name,
+    //     voteCount: candidates.voteCount.toNumber(),
+    //   };
+    // });
+    // console.log(formattedCandidates);
+    // setCandidates(formattedCandidates);
   }
+
   const toggleHandler = (index) => {
     toggle ? setToggle(false) : setToggle(true);
     setCandidateIndex(index);
   };
-
   return (
-    <div className="App">
-      {isConnected ? (
-        <VotingPage
-          account={account}
-          getCandidates={getCandidates}
-          canVote={canVote}
-          candidates={Candidates}
-          eligibility={voterStatus}
-          toggleHandler={toggleHandler}
-        ></VotingPage>
-      ) : (
-        <Login
-          setAccount={setAccount}
-          setConnected={setConnected}
-          canVote={canVote}
-          getCandidates={getCandidates}
-        ></Login>
-      )}
-      {toggle && (
-        <Candidate
-          CandidateIndex={CandidateIndex}
-          candidates={Candidates}
-          getCandidates={getCandidates}
-          canVote={canVote}
-          toggleHandler={toggleHandler}
+    <Router>
+      <Routes>
+        <Route
+          path="/admin"
+          element={
+            <AdminLogin account={Account} getCandidates={getCandidates} />
+          }
         />
-      )}
-    </div>
+        <Route path="/admin-dashboard" element={<AdminDashboard />} />
+        <Route
+          path="/user-dashboard"
+          element={
+            <UserDashboard
+              logged={loged}
+              setLogged={setLoged}
+              setConnected={setConnected}
+            />
+          }
+        />
+
+        <Route
+          path="/result"
+          element={
+            <VotingResult
+              account={Account}
+              setAccount={setAccount}
+              getCandidates={getCandidates}
+              // canVote={canVote}
+              candidates={Candidates}
+              // eligibility={voterStatus}
+              toggleHandler={toggleHandler}
+              setConnected={setConnected}
+              setProvider={setProvider}
+            />
+          }
+        />
+        <Route
+          path="/"
+          element={
+            <Elections
+              setAccount={setAccount}
+              setConnected={setConnected}
+              // canVote={canVote}
+              logged={loged}
+              setLogged={setLoged}
+              getCandidates={getCandidates}
+            />
+          }
+        />
+        <Route path="/candidate/:index" element={<Candidate />} />
+        <Route
+          path="/endedElection"
+          element={
+            <FinishedElectionDetails
+              account={Account}
+              getCandidates={getCandidates}
+              // canVote={canVote}
+              candidates={Candidates}
+            />
+          }
+        />
+        <Route path="*" element={<NotFound />} />
+      </Routes>
+    </Router>
   );
 }
 

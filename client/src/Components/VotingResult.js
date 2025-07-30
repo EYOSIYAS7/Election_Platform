@@ -133,18 +133,7 @@ const VotingResult = (props) => {
     );
 
     const currentElectionData = await contractInstance.getElection(id);
-    // console.log("election id:", currentElectionData[0].toNumber());
-    // console.log(" election Title:", currentElectionData[1]);
-    // console.log(
-    //   index,
-    //   "election candidates:",
-    //   currentElectionData[2].toNumber()
-    // );
-    // console.log(
-    //   index,
-    //   "election startTime:",
-    //   currentElectionData[3].toNumber()
-    // );
+
     console.log("election end time", currentElectionData[3].toNumber());
     const electionData = {
       id: currentElectionData[0].toNumber(),
@@ -187,20 +176,6 @@ const VotingResult = (props) => {
     const endTime = new Date(now);
     endTime.setHours(hours, minutes, 0);
 
-    // If end time is earlier today, assume it's for tomorrow
-    // if (endTime < now) {
-    //   clearInterval(timerRef.current);
-    //     timerRef.current = null; // Reset the timer ref
-    //     setTimeRemaining("Election time finished");
-
-    //     console.log("Election time finshed")
-    //     const pollTimerElement = document.querySelector('.poll-timer-text');
-    //     if (pollTimerElement) {
-    //       pollTimerElement.textContent ="Election time has ended at "+formatTimestamp(electiondata[0].electionEndTime);
-    //     }
-    //     setElectionEnded(true);
-    //     return;
-    // }
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }

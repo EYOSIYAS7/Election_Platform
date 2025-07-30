@@ -54,18 +54,7 @@ const UserDashboard = (props) => {
     const electionData = [];
     for (let index = 1; index <= electionCount; index++) {
       const currentElectionData = await contractInstance.getElection(index);
-      // console.log("election id:", currentElectionData[0].toNumber());
-      // console.log(" election Title:", currentElectionData[1]);
-      // console.log(
-      //   index,
-      //   "election candidates:",
-      //   currentElectionData[2].toNumber()
-      // );
-      // console.log(
-      //   index,
-      //   "election startTime:",
-      //   currentElectionData[3].toNumber()
-      // );
+
       const now = Math.floor(Date.now() / 1000); // Current timestamp in seconds
       const electionEndTime = currentElectionData[3].toNumber();
 

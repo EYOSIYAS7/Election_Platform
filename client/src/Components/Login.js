@@ -1,8 +1,6 @@
 import React from "react";
 import { ethers } from "ethers";
 
-// import { ContractAbi, ContractAddress } from "./Constant/constant";
-
 const Login = (props) => {
   async function connectWithMetamask() {
     if (window.ethereum) {
