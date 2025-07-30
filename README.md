@@ -35,7 +35,6 @@ The application is built using the following technologies:
 
 * **Ethers.j**s: For interacting with blockchain.
 
-* **Vite**: For fast development and bundling.
 
 ### Backend:
 
@@ -52,3 +51,32 @@ The application is built using the following technologies:
 * **Hardhat**: For compiling, deploying, testing, and debugging smart contracts.
   
 * **Sepolia Testnet**: The public Ethereum test network used for deployment.
+
+# How to Run the App Locally
+
+### 1.Clone the repo
+
+```bash
+git clone https://github.com/EYOSIYAS7/Election_Platform.git
+
+cd client
+```
+### 2. Set up environment variables
+
+For the admin accout 
+
+```bash
+ALLOWED_ACCOUNT=your wallet address
+```
+
+### 3. Install the dependencies
+```bash
+npm install
+```
+
+### 4. Run the app
+```bash
+npm run start
+```
+### 5. Smart contract 
+We have already deployed the smart contract on sepolia test net, make sure you have installed **MetaMask** and connected to the **sepolia test** net and have some faucets to make transactions.
