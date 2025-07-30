@@ -247,6 +247,7 @@ const VotingResult = (props) => {
           <p className="voting-description p-2">
             Make Your Vote Count in a Secure and Transparent Election Process
           </p>
+
           <p className="poll-timer-text mb-3"></p>
           {/* {setElectionTime(formatTimestamp(electiondata[0].electionEndTime))} */}
           <div className="voting-cards-container">

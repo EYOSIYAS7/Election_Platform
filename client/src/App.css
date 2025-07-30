@@ -1201,7 +1201,17 @@ body {
   gap: 8px;
   margin-left: auto;
 }
-
+.logout {
+  padding: 8px 16px;
+  color: #edf2f7;
+  font-size: 14px;
+  font-weight: 500;
+  background-color: #8d0303;
+  border: none;
+  border-radius: 50px;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
 .logoutbtn:hover {
   background-color: #4c0000;
   color: #e2e8f0;

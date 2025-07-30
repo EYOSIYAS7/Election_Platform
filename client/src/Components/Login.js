@@ -26,6 +26,9 @@ const Login = (props) => {
           connect your wallet to start using platform. Make sure to that
           metamask is installed{" "}
         </small>
+        <a href={generateSignInUrl()} style={styles.link}>
+          Sign in with Fayda E-Signet
+        </a>
         <button className="login-button" onClick={connectWithMetamask}>
           connect with Metamask
         </button>

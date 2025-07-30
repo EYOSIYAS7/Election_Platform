@@ -4,11 +4,108 @@ import { useNavigate } from "react-router-dom";
 import { FaCheckCircle, FaHourglassEnd } from "react-icons/fa";
 import { ethers } from "ethers";
 import { ContractAbi, ContractAddress } from "../Constant/constant";
+import { useLocation } from "react-router-dom";
+import axios from "axios";
+import * as jose from "jose";
+import { FaAngleRight } from "react-icons/fa";
+const getValidIdToken = () => {
+  const id_token = localStorage.getItem("id_token");
+  if (!id_token) {
+    return null; // No token found
+  }
+  try {
+    const payload = jose.decodeJwt(id_token);
+    // The 'exp' claim is in seconds, Date.now() is in milliseconds
+    if (payload.exp * 1000 > Date.now()) {
+      return id_token; // Token is valid
+    }
+    return null; // Token is expired
+  } catch (error) {
+    return null; // Token is invalid or malformed
+  }
+};
 const UserDashboard = (props) => {
   const [activeView, setActiveView] = useState("active");
   const [elections, setElections] = useState([]);
   const [FinishedElections, setFinishedElections] = useState([]);
+  const [userInfo, setUserInfo] = useState(null);
+  const location = useLocation();
+
   const navigate = useNavigate();
+  async function connectWithMetamask() {
+    console.log("connect with metamask called");
+    if (window.ethereum) {
+      const Provider = new ethers.providers.Web3Provider(window.ethereum);
+
+      await Provider.send("eth_requestAccounts", []);
+      const signer = Provider.getSigner();
+      const address = await signer.getAddress();
+      console.log("connected address: " + address);
+      localStorage.setItem("userAccount", address);
+      props.setAccount(address);
+      props.setConnected(true);
+
+      // props.canVote();
+    } else {
+      console.log("Metamask is not detected in your browser");
+    }
+  }
+  useEffect(() => {
+    const initializeAuth = async () => {
+      // First, try to restore session from localStorage
+      const validToken = getValidIdToken();
+      if (validToken) {
+        console.log("Restoring session from stored token.");
+        const storedUserInfo = JSON.parse(localStorage.getItem("userInfo"));
+        setUserInfo(storedUserInfo);
+        props.setLogged(true); // Update your global logged-in state
+        return; // Session restored, no need to do anything else
+      }
+
+      // If no valid token, check for the authorization code in the URL
+      const query = new URLSearchParams(location.search);
+      const code = query.get("code");
+
+      if (code) {
+        try {
+          // Exchange code for tokens
+          const response = await axios.post("http://localhost:5000/api/token", {
+            code: code,
+          });
+
+          // IMPORTANT: Ensure your backend returns both tokens
+          const { access_token, id_token } = response.data;
+
+          // Get user info
+          const userInfoResponse = await axios.post(
+            "http://localhost:5000/api/userinfo/",
+            { access_token: access_token }
+          );
+
+          const decodedUserInfo = jose.decodeJwt(userInfoResponse.data);
+
+          // --- STORE TOKENS AND USER INFO ---
+          localStorage.setItem("access_token", access_token);
+          localStorage.setItem("id_token", id_token);
+          localStorage.setItem("userInfo", JSON.stringify(decodedUserInfo));
+
+          // Update state
+          setUserInfo(decodedUserInfo);
+          props.setLogged(true);
+
+          // Clean the URL to remove the 'code' parameter, preventing reuse
+          navigate(location.pathname, { replace: true });
+        } catch (error) {
+          console.error("Error during token exchange:", error);
+          navigate("/"); // On error, redirect to home/login
+        }
+      }
+    };
+
+    initializeAuth();
+    // We only want this effect to run on mount or if location changes
+  }, [location, navigate, props]);
+
   useEffect(() => {
     getAllElectionData();
   }, []);
@@ -22,12 +119,25 @@ const UserDashboard = (props) => {
     }
   };
   const handleLogout = () => {
-    console.log("logout have been called");
+    console.log("logout has been called");
+    // Clear everything from localStorage
+    localStorage.removeItem("access_token");
+    localStorage.removeItem("id_token");
+    localStorage.removeItem("userInfo");
     localStorage.removeItem("userAccount");
+
+    // Update state and navigate
     props.setConnected(false);
     props.setLogged(false);
     navigate("/");
   };
+  // const handleLogout = () => {
+  //   console.log("logout have been called");
+  //   localStorage.removeItem("userAccount");
+  //   props.setConnected(false);
+  //   props.setLogged(false);
+  //   navigate("/");
+  // };
   const formatTimestamp = (timestamp) => {
     const date = new Date(timestamp * 1000); // Convert seconds to milliseconds
     const hours = String(date.getHours()).padStart(2, "0"); // Format hours as 2 digits
@@ -131,8 +241,15 @@ const UserDashboard = (props) => {
           >
             <FaHourglassEnd /> Finished Elections
           </button>
-          <button className="logoutbtn" onClick={handleLogout}>
-            LOG OUT
+          <button className="logoutbtn" onClick={connectWithMetamask}>
+            <span>
+              {props.account
+                ? `${props.account.slice(0, 6)}...${props.account.slice(-4)}`
+                : `Connect Wallet >`}
+            </span>
+          </button>
+          <button className="logout" onClick={handleLogout}>
+            <span>Logout</span>
           </button>
         </div>
         <h1 className="main-title">
@@ -174,6 +291,14 @@ const UserDashboard = (props) => {
       </div>
     </div>
   );
+};
+const decodeUserInfoResponse = async (userinfoJwtToken) => {
+  try {
+    return jose.decodeJwt(userinfoJwtToken);
+  } catch (error) {
+    console.error("Error decoding JWT user info:", error);
+    return null;
+  }
 };
 
 export default UserDashboard;

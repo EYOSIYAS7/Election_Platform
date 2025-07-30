@@ -7,7 +7,7 @@ import { ContractAbi, ContractAddress } from "./Constant/constant";
 import AdminDashboard from "./Components/AdminDashboard";
 import UserDashboard from "./Components/userDashBoard";
 import AdminLogin from "./Components/AdminLogin";
-
+import CallbackGuard from "./Components/callbackGaurd";
 import Elections from "./Components/Elections";
 import Candidate from "./Components/Candidate";
 import NotFound from "./Components/404page";
@@ -125,13 +125,17 @@ function App() {
         />
         <Route path="/admin-dashboard" element={<AdminDashboard />} />
         <Route
-          path="/user-dashboard"
+          path="/callback"
           element={
-            <UserDashboard
-              logged={loged}
-              setLogged={setLoged}
-              setConnected={setConnected}
-            />
+            <CallbackGuard>
+              <UserDashboard
+                logged={loged}
+                setLogged={setLoged}
+                account={Account}
+                setConnected={setConnected}
+                setAccount={setAccount}
+              />
+            </CallbackGuard>
           }
         />
 
@@ -156,6 +160,7 @@ function App() {
           element={
             <Elections
               setAccount={setAccount}
+              account={Account}
               setConnected={setConnected}
               // canVote={canVote}
               logged={loged}
