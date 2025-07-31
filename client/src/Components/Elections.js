@@ -57,10 +57,10 @@ const VotingHome = (props) => {
         <section className="hero-section">
           <div className="hero-overlay"></div>
           <div className="hero-content">
-            <h1>Secure Blockchain Voting Platform</h1>
+            <h1>Secure Blockchain Election Platform</h1>
             <p>
               Experience the next generation of democratic participation with
-              our decentralized voting platform. Secure, transparent, and
+              our decentralized election platform. Secure, transparent, and
               accessible.
             </p>
             <a

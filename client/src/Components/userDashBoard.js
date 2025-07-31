@@ -252,6 +252,30 @@ const UserDashboard = (props) => {
             <span>Logout</span>
           </button>
         </div>
+        {/* Info div for wallet connection */}
+        {!props.account && (
+          <div
+            className="alert alert-info mt-3 mb-4"
+            style={{
+              borderRadius: "8px",
+              background:
+                "linear-gradient(90deg, #f7f8f9ff 0%, #edf1f5ff 100%)",
+              color: "#2c3e50",
+              fontWeight: "500",
+              boxShadow: "0 2px 8px rgba(44,62,80,0.08)",
+              textAlign: "center",
+              padding: "16px",
+              maxWidth: "600px",
+              margin: "0 auto",
+            }}
+          >
+            <span style={{ fontSize: "1.1rem" }}>
+              <FaAngleRight style={{ marginRight: "8px", color: "#2980b9" }} />
+              To participate in elections and make transactions, please connect
+              your wallet address using the <b>Connect Wallet</b> button above.
+            </span>
+          </div>
+        )}
         <h1 className="main-title">
           {activeView === "active" ? "Active Elections" : "Finished Elections"}
         </h1>
