@@ -1,6 +1,6 @@
 # Blockchain Based Election Platform
 ## Contributors
-* Eyosiyas Mengesha
+* Eyosiyas Mengesha  email: eyosiyasmengesha@gmail.com
 * Kidist Genene
 * Elrohi Mamo
 ## Motivation
