@@ -51,7 +51,9 @@ function App() {
     if (accounts.length > 0 && Account !== accounts[0]) {
       setAccount(accounts[0]);
       setConnected(true);
-      localStorage.setItem("userAccount", accounts[0]);
+      const checksummedAddress = ethers.utils.getAddress(accounts[0]); // Convert to checksummed format
+      console.log("Account changed to:", checksummedAddress);
+      localStorage.setItem("userAccount", checksummedAddress);
       // canVote();
       // here
       // getCandidates();

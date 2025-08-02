@@ -8,6 +8,9 @@ import { useLocation } from "react-router-dom";
 import axios from "axios";
 import * as jose from "jose";
 import { FaAngleRight } from "react-icons/fa";
+
+// This function gets the ID token and checks if it's expired.
+
 const getValidIdToken = () => {
   const id_token = localStorage.getItem("id_token");
   if (!id_token) {
@@ -33,21 +36,40 @@ const UserDashboard = (props) => {
 
   const navigate = useNavigate();
   async function connectWithMetamask() {
-    console.log("connect with metamask called");
     if (window.ethereum) {
       const Provider = new ethers.providers.Web3Provider(window.ethereum);
-
       await Provider.send("eth_requestAccounts", []);
       const signer = Provider.getSigner();
       const address = await signer.getAddress();
-      console.log("connected address: " + address);
+
+      // Update the current account and connection status
       localStorage.setItem("userAccount", address);
       props.setAccount(address);
       props.setConnected(true);
 
-      // props.canVote();
+      // Check for existing association
+      const storedUserInfo = JSON.parse(localStorage.getItem("userInfo"));
+      const storedSub = localStorage.getItem("userSub");
+      const storedWallet = localStorage.getItem("associatedWallet");
+
+      if (storedUserInfo && storedUserInfo.sub) {
+        if (!storedSub || !storedWallet) {
+          // Only set association if it doesn’t already exist
+          localStorage.setItem("userSub", storedUserInfo.sub);
+          localStorage.setItem("associatedWallet", address);
+          console.log(
+            `Associated sub: ${storedUserInfo.sub} with wallet: ${address}`
+          );
+        } else {
+          console.log(
+            "Association already exists. Cannot change associated wallet."
+          );
+        }
+      } else {
+        console.log("No valid Fayda user info found for association.");
+      }
     } else {
-      console.log("Metamask is not detected in your browser");
+      console.log("MetaMask is not detected in your browser");
     }
   }
   useEffect(() => {
@@ -119,14 +141,12 @@ const UserDashboard = (props) => {
     }
   };
   const handleLogout = () => {
-    console.log("logout has been called");
-    // Clear everything from localStorage
     localStorage.removeItem("access_token");
     localStorage.removeItem("id_token");
     localStorage.removeItem("userInfo");
     localStorage.removeItem("userAccount");
-
-    // Update state and navigate
+    localStorage.removeItem("userSub"); // Clear the sub
+    localStorage.removeItem("associatedWallet"); // Clear the associated wallet
     props.setConnected(false);
     props.setLogged(false);
     navigate("/");
@@ -241,7 +261,11 @@ const UserDashboard = (props) => {
           >
             <FaHourglassEnd /> Finished Elections
           </button>
-          <button className="logoutbtn" onClick={connectWithMetamask}>
+          <button
+            className="logoutbtn"
+            onClick={connectWithMetamask}
+            disabled={props.connected}
+          >
             <span>
               {props.account
                 ? `${props.account.slice(0, 6)}...${props.account.slice(-4)}`

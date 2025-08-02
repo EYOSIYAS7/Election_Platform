@@ -12,6 +12,7 @@ const VotingResult = (props) => {
   const [electiondata, setElection] = useState([]);
   const [loading, setLoading] = useState(true);
   const [showModal, setShowModal] = useState(false);
+  const [isWalletAssociated, setIsWalletAssociated] = useState(false);
   const [selectedCandidate, setSelectedCandidate] = useState(null);
   const [timeRemaining, setTimeRemaining] = useState("");
   const timerRef = useRef(null);
@@ -43,17 +44,26 @@ const VotingResult = (props) => {
       }
     };
   });
+  useEffect(() => {
+    const storedSub = localStorage.getItem("userSub");
+    const storedWallet = localStorage.getItem("associatedWallet");
+    const currentWallet = props.account;
+
+    if (storedSub && storedWallet && currentWallet === storedWallet) {
+      setIsWalletAssociated(true);
+    } else {
+      setIsWalletAssociated(false);
+    }
+  }, [props.account]);
   function handleAccountsChanged(accounts) {
     if (accounts.length > 0 && props.Account !== accounts[0]) {
-      props.setAccount(accounts[0]);
+      const checksummedAddress = ethers.utils.getAddress(accounts[0]); // Convert to checksummed format
+      console.log("Account changed to:", checksummedAddress);
+      props.setAccount(checksummedAddress); // Store checksummed address
       canVote(electionId);
-      // here
-      // getCandidates();
     } else {
       props.setConnected(false);
       props.setAccount(null);
-      // and here needs election id
-      // getCandidates();
     }
   }
   function handleNumberChange(e) {
@@ -268,14 +278,28 @@ const VotingResult = (props) => {
                   Details
                 </small>
 
-                {!voterStatus && !electionEnded && (
+                {isWalletAssociated && !voterStatus && !electionEnded ? (
                   <button
                     className="vote-action-button"
                     onClick={() => handleVoteClick(candidate)}
                   >
                     Vote
                   </button>
-                )}
+                ) : !isWalletAssociated ? (
+                  <p className="error-text">
+                    Please connect the wallet associated with your Fayda account
+                    to vote.
+                  </p>
+                ) : null}
+
+                {/* {!voterStatus && !electionEnded && (
+                  <button
+                    className="vote-action-button"
+                    onClick={() => handleVoteClick(candidate)}
+                  >
+                    Vote
+                  </button>
+                )} */}
               </div>
             ))}
           </div>
