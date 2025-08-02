@@ -8,6 +8,7 @@ const AdminLogin = (props) => {
   const [errorMessage, setErrorMessage] = useState("");
   const [adminAcc, setAdminAccount] = useState(null);
 
+  console.log("Allowed account ", process.env.REACT_APP_ALLOWED_ACCOUNT);
   const allowedAccount = "0x318b777AaA821f97C9B8AD1A5874F989CCf8C35f";
 
   async function connectWithMetamask() {

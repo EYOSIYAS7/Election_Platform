@@ -74,49 +74,66 @@ const VotingResult = (props) => {
     navigate(`/candidate/${index}`);
   };
   async function canVote(Elec_id) {
-    const Provider = new ethers.providers.Web3Provider(window.ethereum);
-    props.setProvider(Provider);
-    await Provider.send("eth_requestAccounts", []);
-    const signer = Provider.getSigner();
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      const signer = provider.getSigner();
+      const contract = new ethers.Contract(
+        ContractAddress,
+        ContractAbi,
+        provider
+      );
 
-    const contractInstance = new ethers.Contract(
-      ContractAddress,
-      ContractAbi,
-      Provider
-    );
-    // get the eligibility status and set it to VoterStatus
-    // this kind of functions just read data from the blockchain
-    const voteStatus = await contractInstance.voters(
-      await signer.getAddress(),
-      Elec_id
-    );
-    console.log("Voter status from the contract", voteStatus);
-    console.log(
-      "the voter status before setting it to voterStatus",
-      voterStatus
-    );
-    setVoterStatus(voteStatus);
+      const voteStatus = await contract.voters(
+        await signer.getAddress(),
+        Elec_id
+      );
+      setVoterStatus(voteStatus);
+    } catch (err) {
+      if (err.code === 4001) {
+        console.log("User canceled wallet connection");
+      } else {
+        console.error("Failed to check voting eligibility:", err);
+      }
+    }
   }
   async function vote(id, number) {
     console.log(" FE candidate index: " + number);
     console.log("FE candidate length" + props.candidates.length);
-    const Provider = new ethers.providers.Web3Provider(window.ethereum);
-    // setProvider(Provider);
-    await Provider.send("eth_requestAccounts", []);
-    const signer = Provider.getSigner();
+    setLoading(true);
 
-    const contractInstance = new ethers.Contract(
-      ContractAddress,
-      ContractAbi,
-      Provider
-    );
-    // this kind of functions writes to the blockchain so we use this kind of method
-    const voteTXN = await contractInstance.connect(signer).vote(id, number);
-    await voteTXN.wait();
-    canVote(electionId);
-    props.getCandidates(id);
-    console.log("voted successfully");
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []); // may throw if user cancels
+      const signer = provider.getSigner();
+
+      const contractInstance = new ethers.Contract(
+        ContractAddress,
+        ContractAbi,
+        provider
+      );
+
+      // send the vote transaction
+      const voteTXN = await contractInstance.connect(signer).vote(id, number);
+      await voteTXN.wait();
+
+      // refresh eligibility and candidate list
+      await canVote(electionId);
+      await props.getCandidates(id);
+
+      console.log("voted successfully");
+    } catch (err) {
+      if (err.code === 4001) {
+        // EIP-1193 userRejectedRequest
+        console.log("User canceled wallet connection or transaction");
+      } else {
+        console.error("Failed to cast vote:", err);
+      }
+    } finally {
+      setLoading(false);
+    }
   }
+
   function formatAccount(account) {
     if (!account) return "";
     return `${account.slice(0, 6)}...${account.slice(-4)}`;

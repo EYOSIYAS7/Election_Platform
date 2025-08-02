@@ -72,44 +72,34 @@ function App() {
 
   async function getCandidates(id) {
     setCandidates([]);
-    const Provider = new ethers.providers.Web3Provider(window.ethereum);
-    await Provider.send("eth_requestAccounts", []);
-    const signer = Provider.getSigner();
-    const contractInstance = new ethers.Contract(
-      ContractAddress,
-      ContractAbi,
-      Provider
-    );
-    console.log(id);
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []);
+      const signer = provider.getSigner();
+      const contract = new ethers.Contract(
+        ContractAddress,
+        ContractAbi,
+        provider
+      );
 
-    const [ids, names, voteCounts] = await contractInstance
-      .connect(signer)
-      .getCandidate(id);
+      const [ids, names, voteCounts] = await contract
+        .connect(signer)
+        .getCandidate(id);
 
-    // Combine the arrays into an array of candidate objects
-    const candidates = ids.map((id, index) => ({
-      id: id.toNumber(), // Convert BigNumber to number
-      name: names[index],
-      voteCount: voteCounts[index].toNumber(),
-    }));
+      const candidates = ids.map((bn, i) => ({
+        id: bn.toNumber(),
+        name: names[i],
+        voteCount: voteCounts[i].toNumber(),
+      }));
 
-    console.log("Candidates:", candidates);
-    setCandidates(candidates);
-    // const receipt = await candidates.wait();
-    // const iface = new ethers.utils.Interface(ContractAbi);
-    // const decodedData = iface.parseTransaction({ data: candidates.data });
-    // console.log(decodedData.functionFragment.outputs[0]);
-
-    // console.log(receipt);
-    // const formattedCandidates = candidates.map((candidates, index) => {
-    //   return {
-    //     index: index,
-    //     name: candidates.name,
-    //     voteCount: candidates.voteCount.toNumber(),
-    //   };
-    // });
-    // console.log(formattedCandidates);
-    // setCandidates(formattedCandidates);
+      setCandidates(candidates);
+    } catch (err) {
+      if (err.code === 4001) {
+        console.log("User canceled wallet connection");
+      } else {
+        console.error("Failed to fetch candidates:", err);
+      }
+    }
   }
 
   const toggleHandler = (index) => {

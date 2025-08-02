@@ -72,7 +72,7 @@ const VotingHome = (props) => {
                 marginRight: "10px",
               }}
             >
-              <span>Login</span>
+              <span>Sign In</span>
               <FaAngleRight />
             </a>
             <a
@@ -84,7 +84,7 @@ const VotingHome = (props) => {
                 marginRight: "10px",
               }}
             >
-              <span>Sign in with Fayda E-Signet</span>
+              <span>Sign up with Fayda E-Signet</span>
               <FaAngleRight />
             </a>
           </div>

@@ -117,44 +117,45 @@ const AdminDashboard = () => {
     console.log("i have call this much");
     setElections([]);
     setFinishedElections([]);
-    const Provider = new ethers.providers.Web3Provider(window.ethereum);
-    // setProvider(Provider);
-    await Provider.send("eth_requestAccounts", []);
-    const signer = Provider.getSigner();
 
-    const contractInstance = new ethers.Contract(
-      ContractAddress,
-      ContractAbi,
-      Provider
-    );
-    const electionCountBN = await contractInstance.electionCount();
-    const electionCount = electionCountBN.toNumber();
-    console.log("Election count: ", electionCount);
-    for (let index = 1; index <= electionCount; index++) {
-      const currentElectionData = await contractInstance.getElection(index);
+    try {
+      const provider = new ethers.providers.Web3Provider(window.ethereum);
+      await provider.send("eth_requestAccounts", []); // may throw if user rejects
+      const signer = provider.getSigner();
 
-      const now = Math.floor(Date.now() / 1000); // Current timestamp in seconds
-      const electionEndTime = currentElectionData[3].toNumber();
+      const contractInstance = new ethers.Contract(
+        ContractAddress,
+        ContractAbi,
+        provider
+      );
+      const electionCountBN = await contractInstance.electionCount(); // on-chain call
+      const electionCount = electionCountBN.toNumber();
+      console.log("Election count: ", electionCount);
 
-      if (electionEndTime > now) {
-        const electionData = {
+      for (let index = 1; index <= electionCount; index++) {
+        const currentElectionData = await contractInstance.getElection(index);
+        const now = Math.floor(Date.now() / 1000); // Current timestamp in seconds
+        const electionEndTime = currentElectionData[3].toNumber();
+
+        const baseData = {
           id: currentElectionData[0].toNumber(),
           title: currentElectionData[1],
           candidateCount: currentElectionData[2].toNumber(),
-          electionEndTime: electionEndTime,
+          electionEndTime,
         };
-        setElections((prevElections) => [...prevElections, electionData]);
+
+        if (electionEndTime > now) {
+          setElections((prev) => [...prev, baseData]);
+        } else {
+          setFinishedElections((prev) => [...prev, baseData]);
+        }
+      }
+    } catch (err) {
+      if (err.code === 4001) {
+        // EIP-1193 userRejectedRequest error
+        console.log("User canceled wallet connection");
       } else {
-        const finishedElectionData = {
-          id: currentElectionData[0].toNumber(),
-          title: currentElectionData[1],
-          candidateCount: currentElectionData[2].toNumber(),
-          electionEndTime: electionEndTime,
-        };
-        setFinishedElections((prevFinishedElections) => [
-          ...prevFinishedElections,
-          finishedElectionData,
-        ]);
+        console.error("Error loading elections:", err);
       }
     }
   };

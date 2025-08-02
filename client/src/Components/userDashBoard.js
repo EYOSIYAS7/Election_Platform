@@ -36,25 +36,46 @@ const UserDashboard = (props) => {
 
   const navigate = useNavigate();
   async function connectWithMetamask() {
-    if (window.ethereum) {
-      const Provider = new ethers.providers.Web3Provider(window.ethereum);
-      await Provider.send("eth_requestAccounts", []);
-      const signer = Provider.getSigner();
-      const address = await signer.getAddress();
+    if (!window.ethereum) {
+      console.log("MetaMask is not detected in your browser");
+      return;
+    }
 
-      // Update the current account and connection status
-      localStorage.setItem("userAccount", address);
-      props.setAccount(address);
-      props.setConnected(true);
+    const provider = new ethers.providers.Web3Provider(window.ethereum);
+    let address;
+    try {
+      // This will throw if the user rejects in MetaMask
+      await provider.send("eth_requestAccounts", []);
+      const signer = provider.getSigner();
+      address = await signer.getAddress();
+    } catch (err) {
+      // err is an object; err.code===4001 means "user rejected"
+      if (err.code === 4001) {
+        console.log("User canceled MetaMask connection");
+        // You could also set some UI state here:
+        // setErrorMessage("Connection to wallet was cancelled.");
+        return;
+      }
+      // any other unexpected error
+      console.error("Error connecting to MetaMask:", err);
+      return;
+    }
 
-      // Check for existing association
-      const storedUserInfo = JSON.parse(localStorage.getItem("userInfo"));
+    // if we get here, the user approved and we have an address
+    localStorage.setItem("userAccount", address);
+    props.setAccount(address);
+    props.setConnected(true);
+
+    // now handle your app-specific association logic
+    try {
+      const storedUserInfo = JSON.parse(
+        localStorage.getItem("userInfo") || "{}"
+      );
       const storedSub = localStorage.getItem("userSub");
       const storedWallet = localStorage.getItem("associatedWallet");
 
-      if (storedUserInfo && storedUserInfo.sub) {
+      if (storedUserInfo.sub) {
         if (!storedSub || !storedWallet) {
-          // Only set association if it doesn’t already exist
           localStorage.setItem("userSub", storedUserInfo.sub);
           localStorage.setItem("associatedWallet", address);
           console.log(
@@ -68,10 +89,11 @@ const UserDashboard = (props) => {
       } else {
         console.log("No valid Fayda user info found for association.");
       }
-    } else {
-      console.log("MetaMask is not detected in your browser");
+    } catch (parseErr) {
+      console.error("Failed to read stored user info:", parseErr);
     }
   }
+
   useEffect(() => {
     const initializeAuth = async () => {
       // First, try to restore session from localStorage
@@ -164,13 +186,15 @@ const UserDashboard = (props) => {
     const minutes = String(date.getMinutes()).padStart(2, "0"); // Format minutes as 2 digits
     return `${hours}:${minutes}`;
   };
+
+  //need try catch
   const getAllElectionData = async () => {
     console.log("i have call this much");
     setElections([]);
     setFinishedElections([]);
     const Provider = new ethers.providers.Web3Provider(window.ethereum);
     // setProvider(Provider);
-    await Provider.send("eth_requestAccounts", []);
+    // await Provider.send("eth_requestAccounts", []);
     const signer = Provider.getSigner();
 
     const contractInstance = new ethers.Contract(
