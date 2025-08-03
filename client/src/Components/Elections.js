@@ -63,7 +63,7 @@ const VotingHome = (props) => {
               our decentralized election platform. Secure, transparent, and
               accessible.
             </p>
-            <a
+            {/* <a
               href="/callback"
               className="connect-button"
               style={{
@@ -74,7 +74,7 @@ const VotingHome = (props) => {
             >
               <span>Sign In</span>
               <FaAngleRight />
-            </a>
+            </a> */}
             <a
               href={generateSignInUrl()}
               className="connect-button"

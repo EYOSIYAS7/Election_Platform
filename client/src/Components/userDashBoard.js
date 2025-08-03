@@ -9,32 +9,30 @@ import axios from "axios";
 import * as jose from "jose";
 import { FaAngleRight } from "react-icons/fa";
 
-// This function gets the ID token and checks if it's expired.
-
 const getValidIdToken = () => {
   const id_token = localStorage.getItem("id_token");
   if (!id_token) {
-    return null; // No token found
+    return null;
   }
   try {
     const payload = jose.decodeJwt(id_token);
-    // The 'exp' claim is in seconds, Date.now() is in milliseconds
     if (payload.exp * 1000 > Date.now()) {
-      return id_token; // Token is valid
+      return id_token;
     }
-    return null; // Token is expired
+    return null;
   } catch (error) {
-    return null; // Token is invalid or malformed
+    return null;
   }
 };
+
 const UserDashboard = (props) => {
   const [activeView, setActiveView] = useState("active");
   const [elections, setElections] = useState([]);
   const [FinishedElections, setFinishedElections] = useState([]);
   const [userInfo, setUserInfo] = useState(null);
   const location = useLocation();
-
   const navigate = useNavigate();
+
   async function connectWithMetamask() {
     if (!window.ethereum) {
       console.log("MetaMask is not detected in your browser");
@@ -44,83 +42,70 @@ const UserDashboard = (props) => {
     const provider = new ethers.providers.Web3Provider(window.ethereum);
     let address;
     try {
-      // This will throw if the user rejects in MetaMask
       await provider.send("eth_requestAccounts", []);
       const signer = provider.getSigner();
       address = await signer.getAddress();
     } catch (err) {
-      // err is an object; err.code===4001 means "user rejected"
       if (err.code === 4001) {
         console.log("User canceled MetaMask connection");
-        // You could also set some UI state here:
-        // setErrorMessage("Connection to wallet was cancelled.");
         return;
       }
-      // any other unexpected error
       console.error("Error connecting to MetaMask:", err);
       return;
     }
 
-    // if we get here, the user approved and we have an address
     localStorage.setItem("userAccount", address);
     props.setAccount(address);
     props.setConnected(true);
 
-    // now handle your app-specific association logic
     try {
       const storedUserInfo = JSON.parse(
         localStorage.getItem("userInfo") || "{}"
       );
-      const storedSub = localStorage.getItem("userSub");
-      const storedWallet = localStorage.getItem("associatedWallet");
-
       if (storedUserInfo.sub) {
-        if (!storedSub || !storedWallet) {
-          localStorage.setItem("userSub", storedUserInfo.sub);
-          localStorage.setItem("associatedWallet", address);
+        const response = await axios.post(
+          "http://localhost:5000/api/association",
+          {
+            sub: storedUserInfo.sub,
+            walletAddress: address,
+          }
+        );
+        if (response.data.success) {
           console.log(
             `Associated sub: ${storedUserInfo.sub} with wallet: ${address}`
           );
         } else {
-          console.log(
-            "Association already exists. Cannot change associated wallet."
-          );
+          console.log("Association already exists or failed.");
         }
       } else {
         console.log("No valid Fayda user info found for association.");
       }
-    } catch (parseErr) {
-      console.error("Failed to read stored user info:", parseErr);
+    } catch (error) {
+      console.error("Failed to save association:", error);
     }
   }
 
   useEffect(() => {
     const initializeAuth = async () => {
-      // First, try to restore session from localStorage
       const validToken = getValidIdToken();
       if (validToken) {
         console.log("Restoring session from stored token.");
         const storedUserInfo = JSON.parse(localStorage.getItem("userInfo"));
         setUserInfo(storedUserInfo);
-        props.setLogged(true); // Update your global logged-in state
-        return; // Session restored, no need to do anything else
+        props.setLogged(true);
+        return;
       }
 
-      // If no valid token, check for the authorization code in the URL
       const query = new URLSearchParams(location.search);
       const code = query.get("code");
 
       if (code) {
         try {
-          // Exchange code for tokens
           const response = await axios.post("http://localhost:5000/api/token", {
             code: code,
           });
-
-          // IMPORTANT: Ensure your backend returns both tokens
           const { access_token, id_token } = response.data;
 
-          // Get user info
           const userInfoResponse = await axios.post(
             "http://localhost:5000/api/userinfo/",
             { access_token: access_token }
@@ -128,26 +113,22 @@ const UserDashboard = (props) => {
 
           const decodedUserInfo = jose.decodeJwt(userInfoResponse.data);
 
-          // --- STORE TOKENS AND USER INFO ---
           localStorage.setItem("access_token", access_token);
           localStorage.setItem("id_token", id_token);
           localStorage.setItem("userInfo", JSON.stringify(decodedUserInfo));
 
-          // Update state
           setUserInfo(decodedUserInfo);
           props.setLogged(true);
 
-          // Clean the URL to remove the 'code' parameter, preventing reuse
           navigate(location.pathname, { replace: true });
         } catch (error) {
           console.error("Error during token exchange:", error);
-          navigate("/"); // On error, redirect to home/login
+          navigate("/");
         }
       }
     };
 
     initializeAuth();
-    // We only want this effect to run on mount or if location changes
   }, [location, navigate, props]);
 
   useEffect(() => {
@@ -155,46 +136,35 @@ const UserDashboard = (props) => {
   }, []);
 
   const handleClick = (elec_id, CheckFinshed) => {
-    // Perform any logic you need before navigation
     if (CheckFinshed) {
       navigate(`/result?electionId=${elec_id}`);
     } else {
       navigate(`/endedElection?electionId=${elec_id}`);
     }
   };
+
   const handleLogout = () => {
     localStorage.removeItem("access_token");
     localStorage.removeItem("id_token");
     localStorage.removeItem("userInfo");
     localStorage.removeItem("userAccount");
-    localStorage.removeItem("userSub"); // Clear the sub
-    localStorage.removeItem("associatedWallet"); // Clear the associated wallet
     props.setConnected(false);
     props.setLogged(false);
     navigate("/");
   };
-  // const handleLogout = () => {
-  //   console.log("logout have been called");
-  //   localStorage.removeItem("userAccount");
-  //   props.setConnected(false);
-  //   props.setLogged(false);
-  //   navigate("/");
-  // };
+
   const formatTimestamp = (timestamp) => {
-    const date = new Date(timestamp * 1000); // Convert seconds to milliseconds
-    const hours = String(date.getHours()).padStart(2, "0"); // Format hours as 2 digits
-    const minutes = String(date.getMinutes()).padStart(2, "0"); // Format minutes as 2 digits
+    const date = new Date(timestamp * 1000);
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
     return `${hours}:${minutes}`;
   };
 
-  //need try catch
   const getAllElectionData = async () => {
     console.log("i have call this much");
     setElections([]);
     setFinishedElections([]);
     const Provider = new ethers.providers.Web3Provider(window.ethereum);
-    // setProvider(Provider);
-    // await Provider.send("eth_requestAccounts", []);
     const signer = Provider.getSigner();
 
     const contractInstance = new ethers.Contract(
@@ -205,11 +175,10 @@ const UserDashboard = (props) => {
     const electionCountBN = await contractInstance.electionCount();
     const electionCount = electionCountBN.toNumber();
     console.log("Election count: ", electionCount);
-    const electionData = [];
     for (let index = 1; index <= electionCount; index++) {
       const currentElectionData = await contractInstance.getElection(index);
 
-      const now = Math.floor(Date.now() / 1000); // Current timestamp in seconds
+      const now = Math.floor(Date.now() / 1000);
       const electionEndTime = currentElectionData[3].toNumber();
 
       if (electionEndTime > now) {
@@ -236,7 +205,7 @@ const UserDashboard = (props) => {
   };
 
   const ElectionCard = ({ election, isActive }) => (
-    <div className="card  user-dashboard-election-card">
+    <div className="card user-dashboard-election-card">
       <div className="card-user-body">
         <div className="card-flag">
           <span
@@ -247,7 +216,6 @@ const UserDashboard = (props) => {
         </div>
         <h5 className="card-title">{election.title}</h5>
         <p className="card-text">
-          {" "}
           Number of candidates: {election.candidateCount}
         </p>
         <p className="card-text">
@@ -257,7 +225,7 @@ const UserDashboard = (props) => {
           </small>
         </p>
         <button
-          className={`btn btn-manage`}
+          className="btn btn-manage"
           onClick={() => handleClick(election.id, isActive)}
         >
           {isActive ? "More" : "View Results"}
@@ -300,7 +268,6 @@ const UserDashboard = (props) => {
             <span>Logout</span>
           </button>
         </div>
-        {/* Info div for wallet connection */}
         {!props.account && (
           <div
             className="alert alert-info mt-3 mb-4"
@@ -327,7 +294,7 @@ const UserDashboard = (props) => {
         <h1 className="main-title">
           {activeView === "active" ? "Active Elections" : "Finished Elections"}
         </h1>
-        <div className="user-dashboard-election-grid ">
+        <div className="user-dashboard-election-grid">
           {activeView === "active" &&
             (elections.length > 0 ? (
               elections.map((election) => (
@@ -364,6 +331,7 @@ const UserDashboard = (props) => {
     </div>
   );
 };
+
 const decodeUserInfoResponse = async (userinfoJwtToken) => {
   try {
     return jose.decodeJwt(userinfoJwtToken);

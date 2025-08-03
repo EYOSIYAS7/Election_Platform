@@ -4,6 +4,7 @@ import { useState, useEffect, useRef } from "react";
 import { useLocation } from "react-router-dom";
 import { useNavigate } from "react-router-dom";
 import { FaUser, FaInfoCircle } from "react-icons/fa";
+import axios from "axios";
 
 const VotingResult = (props) => {
   const [number, setNumber] = useState(null);
@@ -20,8 +21,8 @@ const VotingResult = (props) => {
   const location = useLocation();
   const queryParams = new URLSearchParams(location.search);
   const electionId = queryParams.get("electionId");
+
   useEffect(() => {
-    // formatAccount(props.account);
     props.getCandidates(electionId);
     getAllElectionData(electionId);
     canVote(electionId);
@@ -29,12 +30,11 @@ const VotingResult = (props) => {
       stopElectionCountdown();
     };
   }, []);
+
   useEffect(() => {
-    // getCurrentStatus();
     if (window.ethereum) {
       window.ethereum.on("accountsChanged", handleAccountsChanged);
     }
-    // we needed to remove it when the component unmounted.
     return () => {
       if (window.ethereum) {
         window.ethereum.removeListener(
@@ -43,36 +43,51 @@ const VotingResult = (props) => {
         );
       }
     };
-  });
-  useEffect(() => {
-    const storedSub = localStorage.getItem("userSub");
-    const storedWallet = localStorage.getItem("associatedWallet");
-    const currentWallet = props.account;
+  }, []);
 
-    if (storedSub && storedWallet && currentWallet === storedWallet) {
-      setIsWalletAssociated(true);
-    } else {
-      setIsWalletAssociated(false);
-    }
+  useEffect(() => {
+    const checkWalletAssociation = async () => {
+      const storedUserInfo = JSON.parse(
+        localStorage.getItem("userInfo") || "{}"
+      );
+      if (storedUserInfo.sub) {
+        try {
+          const response = await axios.get(
+            `http://localhost:5000/api/association/${storedUserInfo.sub}`
+          );
+          setIsWalletAssociated(props.account === response.data.walletAddress);
+        } catch (error) {
+          setIsWalletAssociated(false);
+        }
+      } else {
+        setIsWalletAssociated(false);
+      }
+    };
+
+    checkWalletAssociation();
   }, [props.account]);
+
   function handleAccountsChanged(accounts) {
-    if (accounts.length > 0 && props.Account !== accounts[0]) {
-      const checksummedAddress = ethers.utils.getAddress(accounts[0]); // Convert to checksummed format
+    if (accounts.length > 0 && props.account !== accounts[0]) {
+      const checksummedAddress = ethers.utils.getAddress(accounts[0]);
       console.log("Account changed to:", checksummedAddress);
-      props.setAccount(checksummedAddress); // Store checksummed address
+      props.setAccount(checksummedAddress);
       canVote(electionId);
     } else {
       props.setConnected(false);
       props.setAccount(null);
     }
   }
+
   function handleNumberChange(e) {
     setNumber(e.target.value);
     console.log(number);
   }
+
   const handleCandidateClick = (index) => {
     navigate(`/candidate/${index}`);
   };
+
   async function canVote(Elec_id) {
     try {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
@@ -97,14 +112,15 @@ const VotingResult = (props) => {
       }
     }
   }
+
   async function vote(id, number) {
-    console.log(" FE candidate index: " + number);
+    console.log("FE candidate index: " + number);
     console.log("FE candidate length" + props.candidates.length);
     setLoading(true);
 
     try {
       const provider = new ethers.providers.Web3Provider(window.ethereum);
-      await provider.send("eth_requestAccounts", []); // may throw if user cancels
+      await provider.send("eth_requestAccounts", []);
       const signer = provider.getSigner();
 
       const contractInstance = new ethers.Contract(
@@ -113,18 +129,15 @@ const VotingResult = (props) => {
         provider
       );
 
-      // send the vote transaction
       const voteTXN = await contractInstance.connect(signer).vote(id, number);
       await voteTXN.wait();
 
-      // refresh eligibility and candidate list
       await canVote(electionId);
       await props.getCandidates(id);
 
       console.log("voted successfully");
     } catch (err) {
       if (err.code === 4001) {
-        // EIP-1193 userRejectedRequest
         console.log("User canceled wallet connection or transaction");
       } else {
         console.error("Failed to cast vote:", err);
@@ -138,18 +151,18 @@ const VotingResult = (props) => {
     if (!account) return "";
     return `${account.slice(0, 6)}...${account.slice(-4)}`;
   }
+
   const formatTimestamp = (timestamp) => {
-    const date = new Date(timestamp * 1000); // Convert seconds to milliseconds
-    const hours = String(date.getHours()).padStart(2, "0"); // Format hours as 2 digits
-    const minutes = String(date.getMinutes()).padStart(2, "0"); // Format minutes as 2 digits
+    const date = new Date(timestamp * 1000);
+    const hours = String(date.getHours()).padStart(2, "0");
+    const minutes = String(date.getMinutes()).padStart(2, "0");
     return `${hours}:${minutes}`;
   };
+
   const getAllElectionData = async (id) => {
     stopElectionCountdown();
     console.log("i have call this much");
-    // setElections([]);
     const Provider = new ethers.providers.Web3Provider(window.ethereum);
-    // setProvider(Provider);
     await Provider.send("eth_requestAccounts", []);
     const signer = Provider.getSigner();
 
@@ -169,17 +182,16 @@ const VotingResult = (props) => {
       electionEndTime: currentElectionData[3].toNumber(),
     };
 
-    // setElections([...elections, electionData]);
     setElection([electionData]);
     console.log(electiondata);
     setLoading(false);
     setElectionTime(formatTimestamp(electionData.electionEndTime));
   };
+
   const handleVoteClick = (candidate) => {
     console.log("handleVoteClick is called");
     setShowModal(true);
     setSelectedCandidate(candidate);
-
     console.log(showModal);
   };
 
@@ -196,8 +208,6 @@ const VotingResult = (props) => {
   };
 
   const setElectionTime = (value) => {
-    // console.log(typeof(value))
-    // console.log(value)
     const [hours, minutes] = value.split(":").map(Number);
     const now = new Date();
     const endTime = new Date(now);
@@ -206,9 +216,6 @@ const VotingResult = (props) => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
     }
-    if (timerRef.current) {
-      clearInterval(timerRef.current); // Clear any existing timer
-    }
 
     timerRef.current = setInterval(() => {
       const currentTime = new Date();
@@ -216,10 +223,9 @@ const VotingResult = (props) => {
 
       if (remainingMs <= 0) {
         clearInterval(timerRef.current);
-        timerRef.current = null; // Reset the timer ref
+        timerRef.current = null;
         setTimeRemaining("Election time finished");
-
-        console.log("Election time finshed");
+        console.log("Election time finished");
         const pollTimerElement = document.querySelector(".poll-timer-text");
         if (pollTimerElement) {
           pollTimerElement.textContent = "Election time has ended at " + value;
@@ -232,8 +238,6 @@ const VotingResult = (props) => {
         const minutes = Math.floor((remainingSeconds % 3600) / 60);
         const seconds = remainingSeconds % 60;
         setTimeRemaining(`${hours}h ${minutes}m ${seconds}s`);
-        // console.log(`Time remaining: ${hours}h ${minutes}m ${seconds}s`);
-        // Update the poll timer text content
         const pollTimerElement = document.querySelector(".poll-timer-text");
         if (pollTimerElement) {
           pollTimerElement.textContent = `Polls close in: ${hours}h ${minutes}m ${seconds}s`;
@@ -245,12 +249,12 @@ const VotingResult = (props) => {
   const stopElectionCountdown = () => {
     if (timerRef.current) {
       clearInterval(timerRef.current);
-      timerRef.current = null; // Reset the timer ref
+      timerRef.current = null;
       setTimeRemaining("Countdown stopped");
-
       console.log("countdown stopped");
     }
   };
+
   return (
     <div className="voting-container">
       <header className="voting-header">
@@ -274,27 +278,23 @@ const VotingResult = (props) => {
           <p className="voting-description p-2">
             Make Your Vote Count in a Secure and Transparent Election Process
           </p>
-
           <p className="poll-timer-text mb-3"></p>
-          {/* {setElectionTime(formatTimestamp(electiondata[0].electionEndTime))} */}
           <div className="voting-cards-container">
             {props.candidates.map((candidate) => (
               <div key={candidate.index} className="voting-candidate-card">
                 <h3 className="candidate-name-text">{candidate.name}</h3>
                 <p className="candidate-party-text">
-                  Party : party name palace holder
+                  Party : party name placeholder
                 </p>
                 <p className="candidate-votes-text">
                   Votes: {candidate.voteCount}
                 </p>
                 <small
                   className="candidate-details-text"
-                  title="Candidate details will be included soon ... "
-                  // onClick={() => handleCandidateClick(candidate.id)}
+                  title="Candidate details will be included soon ..."
                 >
                   Details
                 </small>
-
                 {isWalletAssociated && !voterStatus && !electionEnded ? (
                   <button
                     className="vote-action-button"
@@ -308,15 +308,6 @@ const VotingResult = (props) => {
                     to vote.
                   </p>
                 ) : null}
-
-                {/* {!voterStatus && !electionEnded && (
-                  <button
-                    className="vote-action-button"
-                    onClick={() => handleVoteClick(candidate)}
-                  >
-                    Vote
-                  </button>
-                )} */}
               </div>
             ))}
           </div>
@@ -372,7 +363,6 @@ const VotingResult = (props) => {
         <div className="modal">
           <div className="modal-content">
             <h4 className="text-black pb-2">
-              {" "}
               <FaInfoCircle /> Confirm Your Vote
             </h4>
             <p>
